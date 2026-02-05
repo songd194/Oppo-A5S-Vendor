@@ -1,14 +1,15 @@
 LOCAL_PATH := $(call my-dir)
 
-VENDOR_FILES := \
-    build.prop \
-    default.prop \
-    manifest.xml \
-    compatibility_matrix.xml
+# Helper function
+define add-vendor-asset
+    include $(CLEAR_VARS)
+    LOCAL_MODULE := $(1)
+    LOCAL_SRC_FILES := $(1)
+    LOCAL_MODULE_CLASS := ETC
+    LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)
+    include $(BUILD_PREBUILT)
+endef
 
-include $(CLEAR_VARS)
-LOCAL_MODULE := vendor_oppo_cph1909
-LOCAL_MODULE_CLASS := ETC
-LOCAL_SRC_FILES := $(VENDOR_FILES)
-LOCAL_MODULE_PATH := $(TARGET_OUT_VENDOR)
-include $(BUILD_PREBUILT)
+# Only the .prop files go here now
+$(eval $(call add-vendor-asset,build.prop))
+$(eval $(call add-vendor-asset,default.prop))
