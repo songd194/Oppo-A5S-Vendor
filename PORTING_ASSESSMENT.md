@@ -1,30 +1,41 @@
-# Android 8.1 Vendor -> Android 13 Port Feasibility (Oppo A5s / MT6765)
+# Port Feasibility: Oppo A5s Vendor (Android 8.1-era) to Android 12/13
 
-## Verdict
-A direct vendor-only port from this Android 8.1-era vendor stack to Android 13 is **not realistically feasible for a stable build**. It may be possible to force partial boot with heavy compatibility hacks, but expect major breakage in radio/camera/media/SELinux and long-term maintenance pain.
+## Short answer
+- **Android 12:** **Possibly yes** for a community/experimental ROM, but still high effort and not guaranteed fully stable.
+- **Android 13:** Much harder; generally R&D-only unless you have newer blobs.
 
-## Evidence from this vendor tree
+## Why Android 12 is more realistic than Android 13
 
-1. The vendor declares first API level 27 (Android 8.1 launch level), which means old vendor interface expectations.
-2. VINTF files in this tree are minimal and use placeholder VNDK versions (`0.0.0`), indicating this dump is not A13-ready as-is.
-3. The device manifest is almost entirely HIDL-era HALs (many 1.0/2.x services), while Android 13 ecosystems increasingly rely on newer interface levels and AIDL migrations in several subsystems.
-4. SELinux policy version is `27.0`, so platform-side sepolicy compatibility and mapping burden is high when targeting Android 13.
+From this tree:
+1. Vendor launch level is old (`ro.product.first_api_level=27`), so there is a large framework/vendor gap either way.
+2. VINTF matrices are minimal and carry placeholder VNDK (`0.0.0`), so compatibility plumbing must be custom.
+3. HAL stack is heavily legacy HIDL with many low versions (common on Oreo/Pie vendors).
+4. SELinux manifest policy version is `27.0`, so policy compatibility work is substantial.
 
-## What this means in practice
+Android 12 still tolerates legacy-vendor bring-up paths (with shims + compatibility work) better than Android 13 in many practical device-port scenarios.
 
-To attempt Android 13 anyway, you would need all of the following:
+## Practical expectation for Android 12
 
-- A strong **legacy-vendor compatibility** strategy (often "vndk-lite" + extensive shims).
-- Large sepolicy bring-up effort with many custom allow rules and compatibility mappings.
-- Interface adaptation for old HAL/service expectations (manifest/matrix surgery + service renames/overrides).
-- Likely subsystem rewrites/workarounds for:
-  - RIL/IMS stack
-  - Camera provider and vendor camera extensions
-  - Media codecs/OMX path
-  - Biometrics/fingerprint
-  - Thermal/power hints
+Likely outcome if you proceed carefully:
+- **Boot to UI:** often achievable.
+- **Core telephony/data:** possible, but modem/RIL quirks expected.
+- **Camera/media/fingerprint/IMS:** highest risk areas; may be partially working for a while.
+- **Stability/perf:** depends heavily on shim quality and SELinux cleanup.
 
-## Recommended path
+## What you would need
 
-- Prefer porting to **Android 11/12 first**, then step to 13.
-- If Android 13 is mandatory, scope as an R&D effort (not production) unless you can source newer vendor blobs from a closer Android base for the same SoC family.
+- Legacy-vendor strategy (often vndk-lite style approach, symbol shims, service adaptation).
+- Device tree + init + manifest/matrix adjustments for old HIDL services.
+- Significant SELinux bring-up and policy mapping.
+- Focused subsystem debugging in this order:
+  1. Boot/SurfaceFlinger/audio
+  2. RIL + mobile data
+  3. Camera + media codecs
+  4. Biometrics + sensors + IMS features
+
+## Recommendation
+
+If your goal is a usable port:
+1. Target **Android 12 first** (yes, feasible enough to try).
+2. Freeze and stabilize major hardware.
+3. Only then evaluate Android 13 migration.
